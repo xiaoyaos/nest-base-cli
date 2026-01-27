@@ -1,0 +1,14 @@
+{
+  "name": "nest-base-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "bin": {
+    "nest-base": "bin/nest-base-cli"
+  },
+  "scripts": {
+    "build": "rm -rf dist/* && tsc"
+  },
+  "author": "",
+  "license": "ISC"
+}

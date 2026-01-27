@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# 基于nestjs初始化模板
+
+# 检查参数
+if [ $# -lt 1 ] || [[ $1 = "--help" ]] || [[ $1 = "-h" ]]
+then
+  echo -e "\nplease input app name\n示例: ./nest-base.sh myapp\n"
+  exit
+fi
+
+# 检查目录是否存在
+if [ -d "$1" ] 
+then
+  echo "dir '$1' already exist"
+  exit
+fi
+
+nest new $1 -p pnpm
+
+cd $1
+
+pnpm add @nestjs/common@^11.0.0 @nestjs/config@^4.0.0 @nestjs/core@^11.0.0 @nestjs/platform-express@^11.0.0 nest-winston@^1.10.2 winston@^3.19.0 winston-daily-rotate-file@^5.0.0 joi@^18.0.0 rxjs@^7.8.0 > /dev/null 2>&1
+pnpm add @nestjs/typeorm typeorm pg > /dev/null 2>&1
+pnpm add git+https://github.com/xiaoyaos/nest-base.git > /dev/null 2>&1
+pwd
+npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
+npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
+
+echo "import 'reflect-metadata';
+
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { setupNestCommon } from 'nest-base';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  setupNestCommon(app);
+
+  await app.listen(process.env.APP_PORT ?? 3000, '0.0.0.0');
+
+  Logger.log(\`Application is running on: \${await app.getUrl()}\`);
+}
+bootstrap();" > src/main.ts
+
+echo "import { Module } from '@nestjs/common';
+import { AutoConfiguredModule, NestCommonModule } from 'nest-base';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+@Module({
+  imports: [NestCommonModule.forRoot()],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule extends AutoConfiguredModule {}" > src/app.module.ts
+
+echo "NODE_ENV=local
+APP_NAME=$1
+APP_PORT=3000
+" > .env
+
+echo "NODE_ENV=local
+APP_NAME=$1
+APP_PORT=3000
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=123456
+DB_NAME=
+DB_SYNCHRONIZE=true" > .env.local

@@ -25,7 +25,7 @@ pnpm add @nestjs/common@^11.0.0 @nestjs/config@^4.0.0 @nestjs/core@^11.0.0 @nest
 pnpm add @nestjs/typeorm > /dev/null 2>&1
 pnpm add typeorm > /dev/null 2>&1
 pnpm add pg > /dev/null 2>&1
-pnpm add file:../nest-base > /dev/null 2>&1
+pnpm add git+https://github.com/xiaoyaos/nest-base.git > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"

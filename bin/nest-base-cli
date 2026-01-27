@@ -19,9 +19,13 @@ nest new $1 -p pnpm
 
 cd $1
 
+echo "initialize···"
+export NODE_OPTIONS="--max-old-space-size=4096"
 pnpm add @nestjs/common@^11.0.0 @nestjs/config@^4.0.0 @nestjs/core@^11.0.0 @nestjs/platform-express@^11.0.0 nest-winston@^1.10.2 winston@^3.19.0 winston-daily-rotate-file@^5.0.0 joi@^18.0.0 rxjs@^7.8.0 > /dev/null 2>&1
-pnpm add @nestjs/typeorm typeorm pg > /dev/null 2>&1
-pnpm add git+https://github.com/xiaoyaos/nest-base.git > /dev/null 2>&1
+pnpm add @nestjs/typeorm > /dev/null 2>&1
+pnpm add typeorm > /dev/null 2>&1
+pnpm add pg > /dev/null 2>&1
+pnpm add file:../nest-base > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
@@ -32,15 +36,19 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupNestCommon } from 'nest-base';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
 
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('app.port', 3000);
+
   setupNestCommon(app);
 
-  await app.listen(process.env.APP_PORT ?? 3000, '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
 
   Logger.log(\`Application is running on: \${await app.getUrl()}\`);
 }
@@ -58,18 +66,58 @@ import { AppService } from './app.service';
 })
 export class AppModule extends AutoConfiguredModule {}" > src/app.module.ts
 
-echo "NODE_ENV=local
-APP_NAME=$1
-APP_PORT=3000
-" > .env
+echo '{
+  "name": "app",
+  "port": 3000,
+  "infrastructure": {
+    "database": [
+      {
+        "type": "postgres",
+        "host": "127.0.0.1",
+        "port": 5432,
+        "user": "postgres",
+        "password": "123456",
+        "database": "nest",
+        "acquireConnectionTimeout": 3000
+      }
+    ],
+    "redis": [
+      {
+        "tag": "permission",
+        "channel": 20,
+        "host": "redis",
+        "port": 6379,
+        "password": "123456",
+        "expires": 600
+      }
+    ],
+    "oss": [
+      {
+        "id": "siot-minio",
+        "type": "Minio",
+        "bucket": "siot7",
+        "endPoint": "minio",
+        "port": 9000,
+        "accessKey": "minio",
+        "secretKey": "siot@201709"
+      }
+    ],
+    "kafka": [
+      {
+        "clientId": "http-request-log",
+        "brokers": [
+          "127.0.0.1:9094"
+        ],
+        "groupId": "group"
+      }
+    ]
+  },
+  "apigateway": {
+    "host": "https://gateway/api/",
+    "app_id": "1",
+    "app_key": "1",
+    "private_key": "1"
+  }
+}' | tee config_prod.json config_dev.json config_local.json > /dev/null
 
-echo "NODE_ENV=local
-APP_NAME=$1
-APP_PORT=3000
-
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=123456
-DB_NAME=
-DB_SYNCHRONIZE=true" > .env.local
+echo "initialize complete"

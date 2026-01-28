@@ -126,6 +126,6 @@ echo '{
     "app_key": "1",
     "private_key": "1"
   }
-}' | tee config_prod.json config_dev.json config_local.json > /dev/null
+}' | tee config.prod.json config.dev.json config.local.json > /dev/null
 
 echo "Nest project created!"

@@ -19,13 +19,15 @@ nest new $1 -p pnpm
 
 cd $1
 
-echo "initialize···"
+echo "Install packages..."
 export NODE_OPTIONS="--max-old-space-size=4096"
+pnpm install > /dev/null 2>&1
 pnpm add @nestjs/common@^11.0.0 @nestjs/config@^4.0.0 @nestjs/core@^11.0.0 @nestjs/platform-express@^11.0.0 nest-winston@^1.10.2 winston@^3.19.0 winston-daily-rotate-file@^5.0.0 joi@^18.0.0 rxjs@^7.8.0 > /dev/null 2>&1
 pnpm add @nestjs/typeorm > /dev/null 2>&1
 pnpm add typeorm > /dev/null 2>&1
 pnpm add pg > /dev/null 2>&1
-pnpm add git+https://github.com/xiaoyaos/nest-base.git > /dev/null 2>&1
+pnpm add ioredis > /dev/null 2>&1
+pnpm add git+http://uj.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
@@ -78,7 +80,13 @@ echo '{
         "user": "postgres",
         "password": "123456",
         "database": "nest",
-        "acquireConnectionTimeout": 3000
+        "synchronize":true
+        "pool":{
+          "min": 2,
+          "max": 10,
+          "idleTimeoutMillis": 30000,
+          "connectionTimeoutMillis": 2000
+        }
       }
     ],
     "redis": [
@@ -93,7 +101,7 @@ echo '{
     ],
     "oss": [
       {
-        "id": "siot-minio",
+        "id": "minio",
         "type": "Minio",
         "bucket": "siot7",
         "endPoint": "minio",
@@ -120,4 +128,4 @@ echo '{
   }
 }' | tee config_prod.json config_dev.json config_local.json > /dev/null
 
-echo "initialize complete"
+echo "Nest project created!"

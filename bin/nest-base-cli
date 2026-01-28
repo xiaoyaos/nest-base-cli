@@ -74,8 +74,9 @@ echo '{
   "infrastructure": {
     "database": [
       {
+        "id": "system",
         "type": "postgres",
-        "host": "127.0.0.1",
+        "host": "tsdb",
         "port": 5432,
         "user": "postgres",
         "password": "123456",
@@ -103,11 +104,11 @@ echo '{
       {
         "id": "minio",
         "type": "Minio",
-        "bucket": "siot7",
+        "bucket": "",
         "endPoint": "minio",
         "port": 9000,
         "accessKey": "minio",
-        "secretKey": "siot@201709"
+        "secretKey": ""
       }
     ],
     "kafka": [

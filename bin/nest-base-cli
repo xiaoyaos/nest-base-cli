@@ -80,7 +80,7 @@ echo '{
         "user": "postgres",
         "password": "123456",
         "database": "nest",
-        "synchronize":true
+        "synchronize":true,
         "pool":{
           "min": 2,
           "max": 10,

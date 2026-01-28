@@ -4,7 +4,7 @@
 # 检查参数
 if [ $# -lt 1 ] || [[ $1 = "--help" ]] || [[ $1 = "-h" ]]
 then
-  echo -e "\nplease input app name\n示例: ./nest-base.sh myapp\n"
+  echo -e "\nplease input app name\n示例: nest-base myapp\n"
   exit
 fi
 

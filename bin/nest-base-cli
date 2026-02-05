@@ -29,6 +29,7 @@ pnpm add pg > /dev/null 2>&1
 pnpm add ioredis > /dev/null 2>&1
 pnpm add nest-base@git+http://uj.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
 
+
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
 
@@ -74,9 +75,9 @@ echo '{
   "infrastructure": {
     "database": [
       {
-        "id": "system",
+        "id":"iam",
         "type": "postgres",
-        "host": "tsdb",
+        "host": "127.0.0.1",
         "port": 5432,
         "user": "postgres",
         "password": "123456",
@@ -86,15 +87,15 @@ echo '{
           "min": 2,
           "max": 10,
           "idleTimeoutMillis": 30000,
-          "acquireTimeoutMillis": 60000
+          "acquireTimeoutMillis": 2000
         }
       }
     ],
     "redis": [
       {
         "tag": "permission",
-        "channel": 20,
-        "host": "redis",
+        "channel": 1,
+        "host": "127.0.0.1",
         "port": 6379,
         "password": "123456",
         "expires": 600
@@ -104,11 +105,11 @@ echo '{
       {
         "id": "minio",
         "type": "Minio",
-        "bucket": "",
-        "endPoint": "minio",
+        "bucket": "bucket",
+        "endPoint": "127.0.0.1",
         "port": 9000,
         "accessKey": "minio",
-        "secretKey": ""
+        "secretKey": "123456"
       }
     ],
     "kafka": [
@@ -119,6 +120,15 @@ echo '{
         ],
         "groupId": "group"
       }
+    ],
+    "mqtt": [
+      {
+        "id": "clientA",
+        "url": "mqtt://127.0.0.1:1883",
+        "username": "username",
+        "password": "123456",
+        "clientId": "clientA"
+      }
     ]
   },
   "apigateway": {
@@ -127,6 +137,24 @@ echo '{
     "app_key": "1",
     "private_key": "1"
   }
-}' | tee config.prod.json config.dev.json config.local.json > /dev/null
+}' | tee config.local.json > /dev/null
+
+echo '{
+  "name": "app",
+  "port": 3000,
+  "infrastructure": {
+    "database": [],
+    "redis": [],
+    "oss": [],
+    "kafka": [],
+    "mqtt": []
+  },
+  "apigateway": {
+    "host": "https://gateway/api/",
+    "app_id": "1",
+    "app_key": "1",
+    "private_key": "1"
+  }
+}' | tee config.prod.json config.dev.json > /dev/null
 
 echo "Nest project created!"

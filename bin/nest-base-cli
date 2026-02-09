@@ -29,9 +29,62 @@ pnpm add pg > /dev/null 2>&1
 pnpm add ioredis > /dev/null 2>&1
 pnpm add nest-base@git+http://uj.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
 
-
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
+npm pkg set scripts.dbml:build="npx dbml-generator gen -i dbml -o src/entities -t dbml/entity.hbs"
+mkdir -p src/utils
+mkdir -p dbml
+
+echo "import { IRespMsg, RespCodes } from 'nest-base';
+
+export const CustomExceptionMap: Record<string, IRespMsg> = {
+  TerminalUnAuth: { msg: '终端未授权.', code: 91001 },
+};
+
+export function CustomExceptionExtend(): void {
+  RespCodes.CustomException = CustomExceptionMap;
+}" > src/utils/CustomExceptionExtend.ts
+
+echo "import { DatabaseEntity } from 'nest-base';
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, Index } from 'typeorm';
+
+{{#each indexes}}
+@Index({{#if name}}'{{name}}', {{/if}}[{{#each columns}}{{#if @index}}, {{/if}}'{{this}}'{{/each}}]{{#if unique}}, { unique: true }{{/if}})
+{{/each}}
+@DatabaseEntity('system')
+@Entity({ name: '{{tableName}}'{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
+export class {{className}} {
+{{#each columns}}
+  {{#if primary}}
+  {{#if increment}}
+  @PrimaryGeneratedColumn()
+  {{else}}
+  @PrimaryColumn()
+  {{/if}}
+  {{else}}
+  {{#if index}}
+  @Index()
+  {{/if}}
+  @Column({ type: '{{dbType}}'{{#if length}}, length: {{length}}{{/if}}{{#if precision}}, precision: {{precision}}{{/if}}{{#if scale}}, scale: {{scale}}{{/if}}{{#if nullable}}, nullable: true{{/if}}{{#if unique}}, unique: true{{/if}}{{#if defaultValue}}, default: {{{defaultValue}}}{{/if}}{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
+  {{/if}}
+  {{propertyName}}!: {{tsType}};
+{{/each}}
+}" > dbml/entity.hbs
+
+echo "Project permission {
+  database_type: 'PostgresSQL'
+  Note:'''
+    # $1 终端服务
+    ** https://dbdocs.io/xiaoyaos/iedp.terminal **
+  '''
+}
+Table user {
+  id varchar [pk, increment, note: \"ID\"]
+  name varchar [not null, note: \"名称\"]
+  age int [not null, note: \"年龄\"]
+
+  note: \"用户信息\"
+}" > dbml/user.dbml
 
 echo "import 'reflect-metadata';
 
@@ -40,6 +93,7 @@ import { NestFactory } from '@nestjs/core';
 import { setupNestCommon } from 'nest-base';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { CustomExceptionExtend } from './utils/CustomExceptionExtend';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -50,6 +104,7 @@ async function bootstrap() {
   const port = configService.get<number>('app.port', 3000);
 
   setupNestCommon(app);
+  CustomExceptionExtend();
 
   await app.listen(port, '0.0.0.0');
 
@@ -92,34 +147,10 @@ echo '{
       }
     ],
     "redis": [
-      {
-        "tag": "permission",
-        "channel": 1,
-        "host": "127.0.0.1",
-        "port": 6379,
-        "password": "123456",
-        "expires": 600
-      }
     ],
     "oss": [
-      {
-        "id": "minio",
-        "type": "Minio",
-        "bucket": "bucket",
-        "endPoint": "127.0.0.1",
-        "port": 9000,
-        "accessKey": "minio",
-        "secretKey": "123456"
-      }
     ],
     "kafka": [
-      {
-        "clientId": "http-request-log",
-        "brokers": [
-          "127.0.0.1:9094"
-        ],
-        "groupId": "group"
-      }
     ],
     "mqtt": [
       {

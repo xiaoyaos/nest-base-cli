@@ -1,0 +1,14 @@
+Project permission {
+  database_type: 'PostgresSQL'
+  Note:'''
+    # $1 终端服务
+    ** https://dbdocs.io/[area]/[project] **
+  '''
+}
+Table user {
+  id varchar [pk, increment, note: "ID"]
+  name varchar [not null, note: "名称"]
+  age int [not null, note: "年龄"]
+
+  note: "用户信息"
+}

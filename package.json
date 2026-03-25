@@ -6,6 +6,11 @@
   "bin": {
     "nest-base": "bin/nest-base-cli"
   },
+  "files": [
+    "bin",
+    "templates",
+    "dist"
+  ],
   "scripts": {
     "build": "rm -rf dist/* && tsc"
   },

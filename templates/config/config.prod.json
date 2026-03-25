@@ -1,0 +1,17 @@
+{
+  "name": "app",
+  "port": 3000,
+  "infrastructure": {
+    "database": [],
+    "redis": [],
+    "oss": [],
+    "kafka": [],
+    "mqtt": []
+  },
+  "apigateway": {
+    "host": "https://gateway/api/",
+    "app_id": "1",
+    "app_key": "1",
+    "private_key": "1"
+  }
+}

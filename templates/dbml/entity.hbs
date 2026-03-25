@@ -1,0 +1,57 @@
+{{#if generateRelations}}
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, Index, ManyToOne, OneToMany, OneToOne, JoinColumn } from 'typeorm';
+{{else}}
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, Index } from 'typeorm';
+{{/if}}
+{{#if generateRelations}}
+{{#each relationImports}}
+import { {{this}} } from './{{this}}.entity';
+{{/each}}
+{{/if}}
+import { DatabaseEntity } from 'nest-base';
+
+{{#each indexes}}
+@Index({{#if name}}'{{name}}', {{/if}}[{{#each columns}}{{#if @index}}, {{/if}}'{{this}}'{{/each}}]{{#if unique}}, { unique: true }{{/if}})
+{{/each}}
+@DatabaseEntity('system')
+@Entity({ name: '{{tableName}}'{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
+export class {{className}} {
+{{#each columns}}
+  {{#if primary}}
+  {{#if increment}}
+  @PrimaryGeneratedColumn({ name: '{{columnName}}' })
+  {{else}}
+  @PrimaryColumn({ name: '{{columnName}}', type: '{{dbType}}'{{#if length}}, length: {{length}}{{/if}}{{#if precision}}, precision: {{precision}}{{/if}}{{#if scale}}, scale: {{scale}}{{/if}}{{#if defaultValue}}, default: {{{defaultValue}}}{{/if}}{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
+  {{/if}}
+  {{else}}
+  {{#if index}}
+  @Index()
+  {{/if}}
+  @Column({ name: '{{columnName}}', type: '{{dbType}}'{{#if length}}, length: {{length}}{{/if}}{{#if precision}}, precision: {{precision}}{{/if}}{{#if scale}}, scale: {{scale}}{{/if}}{{#if nullable}}, nullable: true{{/if}}{{#if unique}}, unique: true{{/if}}{{#if defaultValue}}, default: {{{defaultValue}}}{{/if}}{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
+  {{/if}}
+  {{propertyName}}!: {{tsType}}{{#if nullable}}{{#unless primary}} | null{{/unless}}{{/if}};
+{{/each}}
+
+{{#if generateRelations}}
+{{#each relations}}
+  {{#if (eq kind "many-to-one")}}
+  @ManyToOne(() => {{targetClass}}, (target) => target.{{inverseProperty}}{{#if nullable}}, { nullable: true }{{/if}})
+  {{#if joinColumn}}
+  @JoinColumn({ name: '{{joinColumn}}' })
+  {{/if}}
+  {{propertyName}}!: {{targetClass}}{{#if nullable}} | null{{/if}};
+  {{/if}}
+  {{#if (eq kind "one-to-many")}}
+  @OneToMany(() => {{targetClass}}, (target) => target.{{inverseProperty}})
+  {{propertyName}}!: {{targetClass}}[];
+  {{/if}}
+  {{#if (eq kind "one-to-one")}}
+  @OneToOne(() => {{targetClass}}, (target) => target.{{inverseProperty}}{{#if nullable}}, { nullable: true }{{/if}})
+  {{#if joinColumn}}
+  @JoinColumn({ name: '{{joinColumn}}' })
+  {{/if}}
+  {{propertyName}}!: {{targetClass}}{{#if nullable}} | null{{/if}};
+  {{/if}}
+{{/each}}
+{{/if}}
+}

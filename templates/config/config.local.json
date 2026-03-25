@@ -1,0 +1,45 @@
+{
+  "name": "app",
+  "port": 3000,
+  "infrastructure": {
+    "database": [
+      {
+        "id":"iam",
+        "type": "postgres",
+        "host": "127.0.0.1",
+        "port": 5432,
+        "user": "postgres",
+        "password": "123456",
+        "database": "nest",
+        "synchronize":true,
+        "pool":{
+          "min": 2,
+          "max": 10,
+          "idleTimeoutMillis": 30000,
+          "acquireTimeoutMillis": 2000
+        }
+      }
+    ],
+    "redis": [
+    ],
+    "oss": [
+    ],
+    "kafka": [
+    ],
+    "mqtt": [
+      {
+        "id": "clientA",
+        "url": "mqtt://127.0.0.1:1883",
+        "username": "username",
+        "password": "123456",
+        "clientId": "clientA"
+      }
+    ]
+  },
+  "apigateway": {
+    "host": "https://gateway/api/",
+    "app_id": "1",
+    "app_key": "1",
+    "private_key": "1"
+  }
+}

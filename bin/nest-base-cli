@@ -27,165 +27,43 @@ pnpm add @nestjs/typeorm > /dev/null 2>&1
 pnpm add typeorm > /dev/null 2>&1
 pnpm add pg > /dev/null 2>&1
 pnpm add ioredis > /dev/null 2>&1
+pnpm add -D dbml-generator > /dev/null 2>&1
 pnpm add nest-base@git+http://uj.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
-npm pkg set scripts.dbml:build="npx dbml-generator gen -i dbml -o src/entities -t dbml/entity.hbs"
+npm pkg set scripts.dbml:build="dbml-generator gen -i dbml -o src/entities -t dbml/entity.hbs"
 mkdir -p src/utils
+mkdir -p src/entities
 mkdir -p dbml
 
-echo "import { IRespMsg, RespCodes } from 'nest-base';
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 
-export const CustomExceptionMap: Record<string, IRespMsg> = {
-  TerminalUnAuth: { msg: '终端未授权.', code: 91001 },
-};
+while [ -L "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
 
-export function CustomExceptionExtend(): void {
-  RespCodes.CustomException = CustomExceptionMap;
-}" > src/utils/CustomExceptionExtend.ts
+  if [[ "$SCRIPT_SOURCE" != /* ]]; then
+    SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+  fi
+done
 
-echo "import { DatabaseEntity } from 'nest-base';
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, Index } from 'typeorm';
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+TEMPLATES_DIR="$SCRIPT_DIR/../templates"
 
-{{#each indexes}}
-@Index({{#if name}}'{{name}}', {{/if}}[{{#each columns}}{{#if @index}}, {{/if}}'{{this}}'{{/each}}]{{#if unique}}, { unique: true }{{/if}})
-{{/each}}
-@DatabaseEntity('system')
-@Entity({ name: '{{tableName}}'{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
-export class {{className}} {
-{{#each columns}}
-  {{#if primary}}
-  {{#if increment}}
-  @PrimaryGeneratedColumn()
-  {{else}}
-  @PrimaryColumn()
-  {{/if}}
-  {{else}}
-  {{#if index}}
-  @Index()
-  {{/if}}
-  @Column({ type: '{{dbType}}'{{#if length}}, length: {{length}}{{/if}}{{#if precision}}, precision: {{precision}}{{/if}}{{#if scale}}, scale: {{scale}}{{/if}}{{#if nullable}}, nullable: true{{/if}}{{#if unique}}, unique: true{{/if}}{{#if defaultValue}}, default: {{{defaultValue}}}{{/if}}{{#if noteValue}}, comment: {{{noteValue}}}{{/if}} })
-  {{/if}}
-  {{propertyName}}!: {{tsType}};
-{{/each}}
-}" > dbml/entity.hbs
+if [ ! -d "$TEMPLATES_DIR" ]
+then
+  echo "templates dir not found: $TEMPLATES_DIR"
+  exit 1
+fi
 
-echo "Project permission {
-  database_type: 'PostgresSQL'
-  Note:'''
-    # $1 终端服务
-    ** https://dbdocs.io/xiaoyaos/iedp.terminal **
-  '''
-}
-Table user {
-  id varchar [pk, increment, note: \"ID\"]
-  name varchar [not null, note: \"名称\"]
-  age int [not null, note: \"年龄\"]
-
-  note: \"用户信息\"
-}" > dbml/user.dbml
-
-echo "import 'reflect-metadata';
-
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { setupNestCommon } from 'nest-base';
-import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
-import { CustomExceptionExtend } from './utils/CustomExceptionExtend';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    bufferLogs: true,
-  });
-
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('app.port', 3000);
-
-  setupNestCommon(app);
-  CustomExceptionExtend();
-
-  await app.listen(port, '0.0.0.0');
-
-  Logger.log(\`Application is running on: \${await app.getUrl()}\`);
-}
-bootstrap();" > src/main.ts
-
-echo "import { Module } from '@nestjs/common';
-import { AutoConfiguredModule, NestCommonModule } from 'nest-base';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-
-@Module({
-  imports: [NestCommonModule.forRoot()],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule extends AutoConfiguredModule {}" > src/app.module.ts
-
-echo '{
-  "name": "app",
-  "port": 3000,
-  "infrastructure": {
-    "database": [
-      {
-        "id":"iam",
-        "type": "postgres",
-        "host": "127.0.0.1",
-        "port": 5432,
-        "user": "postgres",
-        "password": "123456",
-        "database": "nest",
-        "synchronize":true,
-        "pool":{
-          "min": 2,
-          "max": 10,
-          "idleTimeoutMillis": 30000,
-          "acquireTimeoutMillis": 2000
-        }
-      }
-    ],
-    "redis": [
-    ],
-    "oss": [
-    ],
-    "kafka": [
-    ],
-    "mqtt": [
-      {
-        "id": "clientA",
-        "url": "mqtt://127.0.0.1:1883",
-        "username": "username",
-        "password": "123456",
-        "clientId": "clientA"
-      }
-    ]
-  },
-  "apigateway": {
-    "host": "https://gateway/api/",
-    "app_id": "1",
-    "app_key": "1",
-    "private_key": "1"
-  }
-}' | tee config.local.json > /dev/null
-
-echo '{
-  "name": "app",
-  "port": 3000,
-  "infrastructure": {
-    "database": [],
-    "redis": [],
-    "oss": [],
-    "kafka": [],
-    "mqtt": []
-  },
-  "apigateway": {
-    "host": "https://gateway/api/",
-    "app_id": "1",
-    "app_key": "1",
-    "private_key": "1"
-  }
-}' | tee config.prod.json config.dev.json > /dev/null
+cp "$TEMPLATES_DIR/src/utils/CustomExceptionExtend.ts" src/utils/CustomExceptionExtend.ts
+cp "$TEMPLATES_DIR/dbml/entity.hbs" dbml/entity.hbs
+cp "$TEMPLATES_DIR/dbml/user.dbml" dbml/user.dbml
+cp "$TEMPLATES_DIR/src/main.ts" src/main.ts
+cp "$TEMPLATES_DIR/src/app.module.ts" src/app.module.ts
+cp "$TEMPLATES_DIR/config/config.local.json" config.local.json
+cp "$TEMPLATES_DIR/config/config.prod.json" config.prod.json
+cp "$TEMPLATES_DIR/config/config.dev.json" config.dev.json
 
 echo "Nest project created!"

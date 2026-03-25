@@ -1,0 +1,27 @@
+stages:
+  - deploy
+
+variables:
+  IMAGE_NAME: iedp-terminal
+  CONTAINER_NAME: iedp-terminal
+
+after_script:
+  - docker image prune -f
+  - echo "部署结束"
+
+dev:
+  stage: deploy
+  environment:
+    name: dev
+  variables:
+    INFRA_BASE_HOME: /usr/local/infra-base
+    DEPLOY_DIR: ${INFRA_BASE_HOME}/services/${CI_ENVIRONMENT_SLUG}/${CONTAINER_NAME}
+    DOCKER_BUILDKIT: 1
+  before_script:
+    - . ./.ci/scripts/before.sh
+  script:
+    - ./.ci/scripts/script.sh
+  tags:
+    - iedp-terminal-service-dev
+  only:
+    - dev

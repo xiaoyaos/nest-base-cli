@@ -28,7 +28,7 @@ pnpm add typeorm > /dev/null 2>&1
 pnpm add pg > /dev/null 2>&1
 pnpm add ioredis > /dev/null 2>&1
 pnpm add -D dbml-generator > /dev/null 2>&1
-pnpm add nest-base@git+http://uj.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
+pnpm add nest-base@git+http://uj.git1.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
@@ -65,5 +65,8 @@ cp "$TEMPLATES_DIR/src/app.module.ts" src/app.module.ts
 cp "$TEMPLATES_DIR/config/config.local.json" config.local.json
 cp "$TEMPLATES_DIR/config/config.prod.json" config.prod.json
 cp "$TEMPLATES_DIR/config/config.dev.json" config.dev.json
+cp "$TEMPLATES_DIR/Dockerfile" Dockerfile
+cp "$TEMPLATES_DIR/.dockerignore" .dockerignore
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/docker-compose.yml" > docker-compose.yml
 
 echo "Nest project created!"

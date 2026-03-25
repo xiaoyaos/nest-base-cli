@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  __APP_NAME__:
+    image: ${IMAGE_NAME:-__APP_NAME__}:latest
+    restart: always
+    environment:
+      - NODE_ENV=${COMPOSE_PROJECT_NAME}
+    volumes:
+      - ${DEPLOY_DIR}/config.${COMPOSE_PROJECT_NAME}.json:/app/config.${COMPOSE_PROJECT_NAME}.json:ro
+    networks:
+      - project_net
+
+networks:
+  project_net:
+    external: true
+    name: infra-base-${COMPOSE_PROJECT_NAME}

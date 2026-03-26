@@ -1,11 +1,74 @@
 #!/usr/bin/env bash
 # 基于nestjs初始化模板
+set -euo pipefail
+
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+
+while [ -L "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+
+  if [[ "$SCRIPT_SOURCE" != /* ]]; then
+    SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+  fi
+done
+
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+CLI_ROOT="$SCRIPT_DIR/.."
+TEMPLATES_DIR="$CLI_ROOT/templates"
+PACKAGE_JSON="$CLI_ROOT/package.json"
+
+get_cli_meta() {
+  node -e "const pkg = require(process.argv[1]); console.log([pkg.name || '@nest-base/cli', pkg.version || 'unknown', pkg.gitHead || ''].join('|'));" "$PACKAGE_JSON" 2>/dev/null || echo "@nest-base/cli|unknown|"
+}
+
+show_help() {
+  local cli_name cli_version cli_git_head
+
+  IFS='|' read -r cli_name cli_version cli_git_head <<EOF
+$(get_cli_meta)
+EOF
+
+  cat <<EOF
+$cli_name: $cli_version
+
+用法:
+  nest-base <app-name>
+  nest-base --help
+  nest-base --version
+
+示例:
+  nest-base demo-service
+EOF
+}
+
+show_version() {
+  local cli_name cli_version cli_git_head
+
+  IFS='|' read -r cli_name cli_version cli_git_head <<EOF
+$(get_cli_meta)
+EOF
+
+  printf '%s %s\n' "$cli_name" "$cli_version"
+}
 
 # 检查参数
-if [ $# -lt 1 ] || [[ $1 = "--help" ]] || [[ $1 = "-h" ]]
+if [[ ${1:-} = "--help" ]] || [[ ${1:-} = "-h" ]]
 then
-  echo -e "\nplease input app name\n示例: nest-base myapp\n"
-  exit
+  show_help
+  exit 0
+fi
+
+if [[ ${1:-} = "--version" ]] || [[ ${1:-} = "-v" ]]
+then
+  show_version
+  exit 0
+fi
+
+if [ $# -lt 1 ]
+then
+  show_help
+  exit 1
 fi
 
 # 检查目录是否存在
@@ -27,29 +90,19 @@ pnpm add @nestjs/typeorm > /dev/null 2>&1
 pnpm add typeorm > /dev/null 2>&1
 pnpm add pg > /dev/null 2>&1
 pnpm add ioredis > /dev/null 2>&1
-pnpm add -D dbml-generator > /dev/null 2>&1
-pnpm add nest-base@git+http://uj.git1.xiaohei123.fun:800/mec/nest-base.git > /dev/null 2>&1
+pnpm add -D @commitlint/cli @commitlint/config-conventional husky > /dev/null 2>&1
+pnpm add nest-base@git+http://uj.git1.xiaohei123.fun:800/mec/nest-base.git#dev_hejiajun > /dev/null 2>&1
 
 npm pkg set scripts.start:local="cross-env NODE_ENV=local nest start --watch"
 npm pkg set scripts.start:dev="cross-env NODE_ENV=dev nest start --watch"
 npm pkg set scripts.dbml:build="dbml-generator gen -i dbml -o src/entities -t dbml/entity.hbs"
+npm pkg set scripts.lint:commit="commitlint --from=HEAD~1 --to=HEAD"
+npm pkg set scripts.prepare="husky"
 mkdir -p src/utils
 mkdir -p src/entities
 mkdir -p dbml
-
-SCRIPT_SOURCE="${BASH_SOURCE[0]}"
-
-while [ -L "$SCRIPT_SOURCE" ]; do
-  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
-  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
-
-  if [[ "$SCRIPT_SOURCE" != /* ]]; then
-    SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
-  fi
-done
-
-SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
-TEMPLATES_DIR="$SCRIPT_DIR/../templates"
+mkdir -p .ci/scripts
+mkdir -p .husky
 
 if [ ! -d "$TEMPLATES_DIR" ]
 then
@@ -62,11 +115,45 @@ cp "$TEMPLATES_DIR/dbml/entity.hbs" dbml/entity.hbs
 cp "$TEMPLATES_DIR/dbml/user.dbml" dbml/user.dbml
 cp "$TEMPLATES_DIR/src/main.ts" src/main.ts
 cp "$TEMPLATES_DIR/src/app.module.ts" src/app.module.ts
-cp "$TEMPLATES_DIR/config/config.local.json" config.local.json
-cp "$TEMPLATES_DIR/config/config.prod.json" config.prod.json
-cp "$TEMPLATES_DIR/config/config.dev.json" config.dev.json
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/config/config.local.json" > config.local.json
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/config/config.prod.json" > config.prod.json
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/config/config.dev.json" > config.dev.json
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/config/config.test.json" > config.test.json
 cp "$TEMPLATES_DIR/Dockerfile" Dockerfile
 cp "$TEMPLATES_DIR/.dockerignore" .dockerignore
+cp "$TEMPLATES_DIR/commitlint.config.js" commitlint.config.js
+cp "$TEMPLATES_DIR/husky/commit-msg" .husky/commit-msg
+cp "$TEMPLATES_DIR/ci/scripts/before.sh" .ci/scripts/before.sh
+cp "$TEMPLATES_DIR/ci/scripts/script.sh" .ci/scripts/script.sh
 sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/docker-compose.yml" > docker-compose.yml
+sed "s/__APP_NAME__/$1/g" "$TEMPLATES_DIR/.gitlab-ci.yml" > .gitlab-ci.yml
+
+chmod 755 .husky/commit-msg .ci/scripts/before.sh .ci/scripts/script.sh
+if [ ! -d .git ]
+then
+  git init > /dev/null 2>&1
+fi
+
+if ! pnpm exec husky > /dev/null 2>&1
+then
+  echo "failed to initialize husky"
+  exit 1
+fi
+git config core.hooksPath .husky/_
+
+hooks_path="$(git config --local --get core.hooksPath || true)"
+if [ "$hooks_path" != ".husky/_" ]
+then
+  echo "failed to configure husky hooksPath"
+  exit 1
+fi
+
+if [ ! -x ".husky/_/commit-msg" ]
+then
+  echo "husky commit-msg hook was not generated"
+  exit 1
+fi
+
+ssh-keygen -t ed25519 -f .ci/gitlab_ci -C "$1" -N "" > /dev/null 2>&1
 
 echo "Nest project created!"

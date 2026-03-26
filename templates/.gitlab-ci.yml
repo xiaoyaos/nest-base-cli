@@ -2,8 +2,8 @@ stages:
   - deploy
 
 variables:
-  IMAGE_NAME: iedp-terminal
-  CONTAINER_NAME: iedp-terminal
+  IMAGE_NAME: __APP_NAME__
+  CONTAINER_NAME: __APP_NAME__
 
 after_script:
   - docker image prune -f
@@ -22,6 +22,6 @@ dev:
   script:
     - ./.ci/scripts/script.sh
   tags:
-    - iedp-terminal-service-dev
+    - __APP_NAME__-dev
   only:
     - dev

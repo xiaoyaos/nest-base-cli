@@ -1,16 +1,16 @@
 {
-  "name": "app",
+  "name": "__APP_NAME__",
   "port": 3000,
   "infrastructure": {
     "database": [
       {
-        "id":"iam",
+        "id":"system",
         "type": "postgres",
         "host": "127.0.0.1",
         "port": 5432,
         "user": "postgres",
         "password": "123456",
-        "database": "nest",
+        "database": "__APP_NAME__",
         "synchronize":true,
         "pool":{
           "min": 2,

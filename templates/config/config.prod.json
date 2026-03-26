@@ -1,8 +1,25 @@
 {
-  "name": "app",
+  "name": "__APP_NAME__",
   "port": 3000,
   "infrastructure": {
-    "database": [],
+    "database": [
+      {
+        "id":"system",
+        "type": "postgres",
+        "host": "127.0.0.1",
+        "port": 5432,
+        "user": "postgres",
+        "password": "123456",
+        "database": "__APP_NAME__",
+        "synchronize":true,
+        "pool":{
+          "min": 2,
+          "max": 10,
+          "idleTimeoutMillis": 30000,
+          "acquireTimeoutMillis": 2000
+        }
+      }
+    ],
     "redis": [],
     "oss": [],
     "kafka": [],
